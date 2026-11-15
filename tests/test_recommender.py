@@ -253,8 +253,11 @@ def test_cli_prints_count_profiles_and_recommendations(capsys):
     output = capsys.readouterr().out
 
     assert "Loaded 18 songs from data/songs.csv" in output
-    assert "=== Default profile: pop / happy ===" in output
+    assert "Scoring weights: genre 3, mood 2, energy 2, acoustic 1 (max score 8)" in output
+    assert "=== High-Energy Pop (default) ===" in output
     assert "  likes_acoustic: False" in output
     assert "1. Sunrise City by Neon Echo  (score 7.78 / 8)" in output
-    assert "=== Verification example: lofi / chill ===" in output
+    assert "=== Chill Lofi (verification example) ===" in output
     assert "1. Library Rain by Paper Lanterns  (score 7.86 / 8)" in output
+    assert "=== Personal interest: indie pop (provisional) ===" in output
+    assert output.count("Top 5 recommendations:") == 6  # all six evaluation profiles

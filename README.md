@@ -2,22 +2,17 @@
 
 ## Project Summary
 
-In this project you will build and explain a small music recommender system.
+**VibeFinder 1.0** is a small, explainable music recommender built for a CodePath classroom simulation. You give it a favorite genre, a favorite mood, a target energy level from 0 to 1, and whether you like acoustic music. It scores all 18 songs in `data/songs.csv` and prints the top five, with the points each rule added.
 
-Your goal is to:
+It uses content-based filtering: it matches stated preferences to song attributes. It does not learn from other users' behavior. The baseline weights are hand-picked: genre 3, mood 2, energy 2 and acoustic 1, for a maximum of 8.
 
-- Represent songs and a user "taste profile" as data
-- Design a scoring rule that turns that data into recommendations
-- Evaluate what your system gets right and wrong
-- Reflect on how this mirrors real world AI recommenders
-
-Replace this paragraph with your own summary of what your version does.
+The project tested six profiles and one weight-shift experiment. See [Experiments You Tried](#experiments-you-tried) and the [model card](model_card.md) for results and limitations.
 
 ---
 
 ## How The System Works
 
-> **Status: implemented (Phase 3).** The design below is implemented in `src/recommender.py` as `load_songs`, `score_song` and `recommend_songs`. The `Recommender` class reuses the same scoring and ranking code. Run it with `py -m src.main` (or `python -m src.main`); actual output is in [Sample Recommendation Output](#sample-recommendation-output).
+> **Status: implemented.** The design below is implemented in `src/recommender.py` as `load_songs`, `score_song` and `recommend_songs`. The `Recommender` class reuses the same scoring and ranking code. Run it with `py -m src.main` (or `python -m src.main`); actual output is in [Sample Recommendation Output](#sample-recommendation-output).
 
 ### How real recommenders work
 
@@ -145,7 +140,7 @@ This result applies only to this profile and this catalog. It is not a rule that
 - **Exact labels miss related ones.** "indie pop" doesn't match "pop", and "relaxed" or "peaceful" don't match "chill".
 - **There is no neutral acoustic option.** `likes_acoustic=False` means "prefers less acoustic", so a user who doesn't care is still pushed one way.
 - **The catalog is small and uneven.** There are 18 songs. Lofi has 3, pop has 2, and every other genre has only 1.
-- **This is not evidence of accuracy.** The synthetic values and hand-picked weights are a starting design. They don't show that the recommender would match real people's taste.
+- **This is not evidence of accuracy.** The hand-picked weights are a starting design, and the 8 added songs are synthetic. They don't show that the recommender would match real people's taste.
 
 ---
 
@@ -191,16 +186,17 @@ You can add more tests in `tests/test_recommender.py`.
 
 ## Sample Recommendation Output
 
-Actual output of `py -m src.main`, run from the repository root. One run prints two profiles. Both are illustrative examples, not anyone's personal taste.
+Excerpts from the actual output of `py -m src.main`, run from the repository root. One run prints the scoring weights and six profiles. The first two are shown here; the other four are in [model_card.md](model_card.md#7-evaluation). These two are illustrative examples, not anyone's personal taste.
 
-### Default profile: pop / happy
+### High-Energy Pop (default profile)
 
 Profile used: `favorite_genre="pop"`, `favorite_mood="happy"`, `target_energy=0.8`, `likes_acoustic=False`. Here `False` means "prefers less acoustic", chosen to fit the high-energy, mostly electronic pop songs.
 
 ```text
 Loaded 18 songs from data/songs.csv
+Scoring weights: genre 3, mood 2, energy 2, acoustic 1 (max score 8)
 
-=== Default profile: pop / happy ===
+=== High-Energy Pop (default) ===
 Profile:
   favorite_genre: pop
   favorite_mood: happy
@@ -242,12 +238,12 @@ Top 5 recommendations:
 
 Storm Runner and Night Drive Loop tie at 2.68 after rounding, so they keep their `songs.csv` order. Rooftop Lights gets no genre points because "indie pop" is not an exact match for "pop".
 
-### Separate verification example: lofi / chill
+### Chill Lofi (separate verification example)
 
 Profile used: `favorite_genre="lofi"`, `favorite_mood="chill"`, `target_energy=0.35`, `likes_acoustic=True`. This is the illustrative profile from [How The System Works](#how-the-system-works), and the program reproduces its expected top five. Same run as above:
 
 ```text
-=== Verification example: lofi / chill ===
+=== Chill Lofi (verification example) ===
 Profile:
   favorite_genre: lofi
   favorite_mood: chill
@@ -287,44 +283,52 @@ Top 5 recommendations:
    - acousticness 0.89, likes acoustic (+0.89)
 ```
 
-**Screenshot or video** *(optional)*: <!-- Insert a screenshot or demo video link here -->
-
 ---
 
 ## Experiments You Tried
 
-Use this section to document the experiments you ran. For example:
+Full profiles, terminal output and comparisons are in [model_card.md, section 7 (Evaluation)](model_card.md#7-evaluation).
 
-- What happened when you changed the weight on genre from 2.0 to 0.5
-- What happened when you added tempo or valence to the score
-- How did your system behave for different types of users
+- **Six test profiles.** High-Energy Pop, Chill Lofi and Deep Intense Rock; two adversarial profiles (a sad mood with a high energy target, and "Hip-Hop" spelled differently from the catalog's "hip hop"); and a personal-interest profile. The author enjoys Chinese indie and Korean shoegaze, which the catalog doesn't include, so that profile uses "indie pop", with provisional mood, energy and acoustic values. All were run through `py -m src.main`.
+- **What stood out.** Exact labels dominate the baseline. The calm, sad blues song won a request for energy 0.9 by 3.33 points, and the hyphen in "Hip-Hop" cost the only hip hop song its 3 genre points. The rock profile had just one rock song to choose from. For the personal-interest profile, Rooftop Lights (the only indie pop song) ranked #1 on its genre match, even though it is labeled "happy" rather than "moody".
+- **Weight shift (genre 3 → 1.5, energy 2 → 4, maximum 8.5).** Applied temporarily in `src/recommender.py`. The #1 song stayed the same for five of the six profiles. For the personal-interest profile, Night Drive Loop (synthwave, moody) passed Rooftop Lights, because a mood match now outweighs a genre match. Lower ranks moved toward songs with closer energy: Rooftop Lights passed Gym Hero for High-Energy Pop, and Spacewalk Thoughts passed Focus Flow for Chill Lofi. Deep Intense Rock did not change at all.
+- **Outcome.** The baseline weights were restored and remain the implementation. A different ranking shows what the weights control; it is not evidence of better accuracy.
+- **Personal intuition check.** For the personal-interest profile, the author said: "Based on the descriptions, I would prefer Rooftop Lights because it is indie pop, which is closer to the music I am interested in right now." In this example the baseline matches that stated preference better: it ranks Rooftop Lights first, while the experiment puts Night Drive Loop first. The judgment is based on genre descriptions, not on listening to the songs, and one example does not show that the baseline is more accurate overall.
 
 ---
 
 ## Limitations and Risks
 
-Summarize some limitations of your recommender.
+These were observed in testing. Details are in the [model card](model_card.md#6-limitations-and-bias).
 
-Examples:
-
-- It only works on a tiny catalog
-- It does not understand lyrics or language
-- It might over favor one genre or mood
-
-You will go deeper on this in your model card.
+- **Small catalog with 8 synthetic songs.** There are 18 songs. The 8 added songs have invented titles and artists and hand-chosen values. Results show how the formula behaves, not real-world accuracy.
+- **Uneven coverage.** Lofi has 3 songs and pop has 2; every other genre has 1. There is no Chinese indie or shoegaze.
+- **Genre dominates.** Genre and mood labels are worth 5 of 8 points. A calm, sad blues song (energy 0.30) won a sad-blues request with a 0.9 energy target.
+- **Exact labels.** "Hip-Hop" does not match "hip hop", and "indie pop" does not match "pop".
+- **No neutral acoustic option.** `likes_acoustic=False` means "prefers less acoustic", not "no preference".
+- **No lyrics, language or listening history.** VibeFinder cannot learn from what people actually play, like or skip.
+- **Risk: results can look more personal than they are.** Each list is tailored to four stated preferences and comes with reasons. But VibeFinder is not validated against real listeners, so it should not be treated as a real recommendation service.
 
 ---
 
 ## Reflection
 
-Read and complete `model_card.md`:
+The full model card is in [model_card.md](model_card.md).
 
-[**Model Card**](model_card.md)
+**Biggest learning moment.** My biggest learning moment was seeing that changing the weights changes what the recommender prioritizes. In the weight-shift experiment, genre was halved and energy was doubled. For my personal-interest profile, Rooftop Lights dropped from #1 to #2, and Night Drive Loop took #1. The songs and my profile did not change. Only the weights did.
 
-Write 1 to 2 paragraphs here about what you learned:
+**How recommenders turn data into recommendations.** This project uses content-based filtering. It matches my stated preferences to each song's attributes: genre, mood, energy and acousticness. I also learned that collaborative filtering uses patterns in other users' behavior. Real systems can combine both approaches.
 
-- about how recommenders turn data into predictions
-- about where bias or unfairness could show up in systems like this
+**How AI tools helped, and when we double-checked them.** Claude implemented the code and explained each step. Copilot independently checked the files, calculations and tests. For example, it reproduced the expected top-five scores and ran all 20 tests. The tools also needed checking. At one point, Copilot flagged my genre interests as unsupported. It did not have the earlier conversation where I stated them. I clarified that I had stated them explicitly.
+
+**Simple rules, personalized-looking results.** VibeFinder uses four simple rules and fixed weights. Still, each profile gets its own top five with reasons, so the results look personalized. But the system only knows labels and numbers. I currently enjoy Chinese indie and Korean shoegaze, including Parannoul, No Party For Cao Dong, 蛙池 and Omnipotent Youth Society. The catalog has neither genre, so my profile used "indie pop" as the closest label. Its mood, energy and acoustic settings remain provisional assumptions. Based on its indie-pop description, I preferred Rooftop Lights. I did not listen to the song. This also shows where unfairness could appear. Listeners whose genres are missing, or spelled differently, get weaker matches. For example, "Hip-Hop" did not match the catalog's "hip hop".
+
+**What I could try next.** Some possibilities:
+
+- Treat spellings like "Hip-Hop" and "hip hop" as the same, and give partial points to related genres.
+- Replace the acoustic yes/no setting with a target level or a "no preference" option.
+- Add more songs per genre, including Chinese indie and Korean shoegaze.
+- Combine content-based scoring with collaborative signals, such as likes or skips.
 
 
 

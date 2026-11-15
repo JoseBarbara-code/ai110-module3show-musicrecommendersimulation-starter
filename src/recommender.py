@@ -81,7 +81,7 @@ class Recommender:
     def explain_recommendation(self, user: UserProfile, song: Song) -> str:
         """Explain one song's score for this user using the real scoring reasons."""
         score, reasons = score_song(asdict(user), asdict(song))
-        return f"Score {score:.2f} / {MAX_SCORE:.0f}: " + "; ".join(reasons)
+        return f"Score {score:.2f} / {MAX_SCORE:g}: " + "; ".join(reasons)
 
 
 def load_songs(csv_path: str) -> List[Dict]:
